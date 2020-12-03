@@ -17,8 +17,9 @@
 
 Simple Telegram Bot written in PowerShell, based on mksh bot by <https://gitlab.com/craftmallus/neekshell-telegrambot>. The bot has not been tested yet.
 
-TODO
+TODO1
 
+- Write Invoke-ProcessReply function
 - Test if it works
 - PowerShell webhook (webhook.php is adapted from mkshbot)
 - Other stuff
