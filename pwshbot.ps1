@@ -13,7 +13,7 @@
 
    $StartTime = Get-Date -UFormat %s
    
-   Set-PSDebug -Trace 2
+   Set-PSDebug -Trace 1
 
    function Invoke-Sth {
 	   param ( 
