@@ -1,4 +1,7 @@
 #!/usr/bin/pwsh
+param (
+    $TGInput
+    )
 
 $StartTime = Get-Date -UFormat %s
 
@@ -371,7 +374,7 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 	   $TGInput
 	   )
 
-	   ($TGInput -eq "reply") -and $Message = $ReplyToMessage
+	   ($TGInput -eq "reply") -and ($Message = $ReplyToMessage)
 	   $TextID = $Message.text
 	   $PhotoID = $Message.photo."0".file_id
 	   $AnimationID = $Message.animation.file_id
@@ -456,7 +459,7 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 		   'ok' {
 			   $Title = 'Ok'
 			   $MessageText = 'Ok'
-			   $Description 'Alright'
+			   $Description = 'Alright'
 			   $ReturnQuery = Invoke-InLine article
 			   Deploy-TGMethod send_inline | Out-File -Path /dev/null
 		   }
@@ -490,13 +493,13 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 	   $UsernameID = $Message.from.id
 	   $UsernameFirstName = $Message.from.first_name
 	   $UsernameLastName = $Messange.from.last_name
-	   if (!$UsernameID)
+	   if ($UsernameID)
 	   {
-		   Test-Path -Path db/users -PathType Container -and New-Item -Name db/users/ -ItemType Directory
+		   !(Test-Path -Path db/users -PathType Container) -and (New-Item -Name db/users/ -ItemType Directory)
 		   $FileUser = "db/users/$UsernameTag"
-		   if (Test-Path -Path $FileUser -PathType Leaf)
+		   if (!(Test-Path -Path $FileUser -PathType Leaf))
 		   {
-			   !$UsernameTag -and $UsernameTag = "(empty)"
+			   (!$UsernameTag) -and ($UsernameTag = "(empty)")
 			   @{
 				   'tag' = $UsernameTag
 				   'id' = $UsernameID
@@ -510,16 +513,134 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 			   $FileUser = $FileUser -replace "tag: .*", "tag :$UsernameTag"
 		   }
 
-		   if ("fname: $UsernameFirstName" -ne (Select-String -LiternalPath $FileUser -Pattern "fname" -Raw)
+		   if ("fname: $UsernameFirstName" -ne (Select-String -LiternalPath $FileUser -Pattern "fname" -Raw))
 		   {
 			   $FileUser = $FileUser -replace "fname: .*", "fname: $UsernameFirstName"
 		   }
 
-		   if ("lname: $UsernameLastName" -ne (Select-String -LiternalPath $FileUser -Pattern "lname" -Raw)
+		   if ("lname: $UsernameLastName" -ne (Select-String -LiternalPath $FileUser -Pattern "lname" -Raw))
 		   {
 			   $FileUser = $FileUser -replace "lname: .*", "lname: $UsernameLastName"
 		   }
 	   }
+	   $ReplyToMessage = $Message.reply_to_message
+	   if ($ReplyToMessage)
+	   {
+		   $ReplyToID = $ReplyToMessage.message_id
+		   $ReplyToUserID = $ReplyToMessage.from.id
+		   $ReplyToUserTag = $ReplyToMessage.from.username
+		   $ReplyToUserFirstName = $ReplyToMessage.from.first_name
+		   $ReplyToUserLastName = $ReplyToMessage.from.last_name
+		   $ReplyToText = $ReplyToMessage.text
+		   !(Test-Path -Path db/users -PathType Container) -and (New-Item -Name db/users/ -ItemType Directory)
+		   $FileReplyUser = "db/users/$ReplyToUserTag"
+		   if (Test-Path -Path $FileReplyUser -PathType Leaf)
+		   {
+			   (!$ReplyToUserTag) -and ($ReplyToUserTag = "(empty)")
+			   @{
+				   'tag' = $ReplyToUserTag
+				   'id' = $ReplyToUserID
+				   'fname' = $ReplyToUserFirstName
+				   'lname' = $ReplyToUserLastName
+			   } | ConvertTo-Json | Out-File -Path $FileReplyUser
+		   }
+	   }
+
+	   # Chat database
+	   $ChatTitle = $Message.chat.title
+	   $ChatID = $Message.chat.id
+	   if ($ChatTitle)
+	   {
+		   !(Test-Path -Path db/chats -PathType Container) -and (New-item -Name db/chats -ItemType Directory)
+		   $FileChat = "db/chats/$ChatID"
+		   if (!(Test-Path -Path $FileChat -PathType Leaf))
+		   {
+			   @{
+				   'title' = $ChatTitle
+				   'id' = $ChatID
+				   'type' = $FileType
+			   } | ConvertTo-Json | Out-File -Path $FileChat
+		   }
+	   }
+
+	   $CallBackUser = $Callback.from.username
+	   $CallbackUserID = $Callback.from.id
+	   $CallbackID = $Callback.id
+	   $CallbackData = $Callback.data
+	   $CallbackMessageText = $Callback.message.text
+
+	   if ( $FileType -eq "private" -or $Inline -or $Callback)
+	   {
+		   $BotChatDir = "db/bot_chats"
+		   $BotChatUserID = $UsernameID
+	   }
+	   else
+	   {
+		   $BotChatID = "db/bot_group_chats"
+		   $BotChatUserID = $ChatID
+	   }
+
+	   $MessageID = $Message.message_id
+	   $InlineUser = $Inline.from.username
+	   $InlineUserID = $Inline.from.id
+	   $InlineID = $Inline.id
+	   $Results = $Inline.query
+
+	   Get-FileType
+
+	   Switch ($FileType)
+	   {
+		   text {
+			   $FirstNormal = $TextID
+		   }
+		   
+		   photo {
+			   $FirstNormal = $PhotoID
+		   }
+		   
+		   animation {
+			   $FirstNormal = $AnimationID
+		   }
+		   
+		   video {
+			   $FirstNormal = $VideoID
+		   }
+		   
+		   audio {
+			   $FirstNormal = $AudioID
+		   }
+
+		   voice {
+			   $FirstNormal = $VoiceID
+		   }
+
+		   document {
+			   $FirstNormal = $DocumentID
+		   }
+	   }
+
+	   $PF = $TextID.ToCharArray() | select -First 1
+	   if ( $PF -ne '!' -and $PF -ne '/')
+	   {
+		   $PF = ""
+	   }
+
+	   if ($FirstNormal)
+	   {
+		   Get-NormalReply
+		   # source?
+	   }
+	   elseif ($Results)
+	   {
+		   Get-Inlinereply
+		   # source?
+	   }
+	   elseif ($CallbackData)
+	   {
+		   Get-ButtonReply
+		   # source?
+	   }
+   }
 
    Set-PSDebug -Off
 
