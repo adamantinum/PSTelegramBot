@@ -1,20 +1,20 @@
 #!/usr/bin/pwsh
-param (
-    $TGInput
-    )
-
-$StartTime = Get-Date -UFormat %s
-
-function prompt {
-	$(if (Test-Path -Path variable:/PSDebugContext) { "[$(Get-Date -UFormat "%F %H:%M:%s")]" })
-}
-
-$Token = Get-Content -Path token
-$TelegramAPI = "https://api.telegram.org/bot$Token"
-
 &{
-   Set-PSDebug -Strict
+   param (
+      $TGInput
+   )
+
+   function prompt {
+	   $(if (Test-Path -Path variable:/PSDebugContext) { "[$(Get-Date -UFormat "%F %H:%M:%s")]" })
+   }
+
+   $Token = Get-Content -Path token
+   $TelegramAPI = "https://api.telegram.org/bot$Token"
+
+   $StartTime = Get-Date -UFormat %s
    
+   Set-PSDebug -Trace 2
+
    function Invoke-Sth {
 	   param ( 
 	   $Arg1,
@@ -642,6 +642,12 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 	   }
    }
 
-   Set-PSDebug -Off
+   Invoke-ProcessReply
 
-} 1>>"log.log" 2>&1
+   $EndTime = Get-Date -UFormat %s
+
+   Write-Host "[$(Get-Date -UFormat "%F %H:%M:%s")] elapsed time: $($EndTime-$StartTime) ms"
+
+   Set-PSDebug -Off
+echo ciao
+} 2>&1 5>&1 >> "log.log" 
