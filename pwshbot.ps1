@@ -51,7 +51,7 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 
    function Find-Subreddit {
 	   param (
-	   $TGInput
+	   $TGInput,
 	   $Key
 	   )
 
@@ -65,7 +65,7 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 			   {
 				   random {
 					   $rSub = (Invoke-WebRequest -Uri 'https://reddit.com/random/.json/').Content
-					   $Hot = ($rSub | ConvertFrom-Json).data.children..data
+					   $Hot = ($rSub | ConvertFrom-Json).data.children.data
 					   }
 			   }
 		   }
@@ -475,7 +475,51 @@ $TelegramAPI = "https://api.telegram.org/bot$Token"
 	   }
    }
 
-   
+   function Invoke-ProcessReply {
+	   $Message = ($TGInput | ConvertTo-Json).message
+	   $Inline = ($TGInput | ConvertTo-Json).inline_query
+	   $Callback = ($TGInput | ConvertTo-Json).callback_query
+	   $FileType = $Message.chat.type
+	   if (!$Message.text -and ($FileType -ne "private") -and !$Inline -and !$Callback)
+	   {
+		   exit
+	   }
+
+	   # User database
+	   $UsernameTag = $Message.from.username
+	   $UsernameID = $Message.from.id
+	   $UsernameFirstName = $Message.from.first_name
+	   $UsernameLastName = $Messange.from.last_name
+	   if (!$UsernameID)
+	   {
+		   Test-Path -Path db/users -PathType Container -and New-Item -Name db/users/ -ItemType Directory
+		   $FileUser = "db/users/$UsernameTag"
+		   if (Test-Path -Path $FileUser -PathType Leaf)
+		   {
+			   !$UsernameTag -and $UsernameTag = "(empty)"
+			   @{
+				   'tag' = $UsernameTag
+				   'id' = $UsernameID
+				   'fname' = $UsernameFirstName
+				   'lname' = $UsernameLastName
+			   } | ConvertTo-Json | Out-File -Path $FileUser
+		   }
+		   
+		   if ("tag: $UsernameTag" -ne (Select-String -LiteralPath $FileUser -Pattern "tag" -Raw))
+		   {
+			   $FileUser = $FileUser -replace "tag: .*", "tag :$UsernameTag"
+		   }
+
+		   if ("fname: $UsernameFirstName" -ne (Select-String -LiternalPath $FileUser -Pattern "fname" -Raw)
+		   {
+			   $FileUser = $FileUser -replace "fname: .*", "fname: $UsernameFirstName"
+		   }
+
+		   if ("lname: $UsernameLastName" -ne (Select-String -LiternalPath $FileUser -Pattern "lname" -Raw)
+		   {
+			   $FileUser = $FileUser -replace "lname: .*", "lname: $UsernameLastName"
+		   }
+	   }
 
    Set-PSDebug -Off
 
