@@ -5,5 +5,5 @@ $input = str_replace('\\\\', '\\\\\\', $input);
 $input = str_replace('"', '\"', $input );
 $input = str_replace('$', '\$', $input );
 $input = str_replace('\\\\"', '\\\\\\"', $input);
-shell_exec ("pwsh ./pwshbot.ps1 $input\" > /dev/null &");
+shell_exec ("pwsh -Command \"./pwshbot.ps1 $input\" > /dev/null &");
 ?>
