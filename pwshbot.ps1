@@ -1,13 +1,13 @@
 #!/usr/bin/pwsh
+param (
+   $TGInput
+)
+
+function prompt {
+	$(if (Test-Path -Path variable:/PSDebugContext) { "[$(Get-Date -UFormat "%F %H:%M:%s")]" })
+}
+
 &{
-   param (
-      $TGInput
-   )
-
-   function prompt {
-	   $(if (Test-Path -Path variable:/PSDebugContext) { "[$(Get-Date -UFormat "%F %H:%M:%s")]" })
-   }
-
    $Token = Get-Content -Path token
    $TelegramAPI = "https://api.telegram.org/bot$Token"
 
@@ -67,8 +67,8 @@
 			   Switch($Sort)
 			   {
 				   random {
-					   $rSub = (Invoke-WebRequest -Uri 'https://reddit.com/random/.json/').Content
-					   $Hot = ($rSub | ConvertFrom-Json).data.children.data
+					   $rSub = Invoke-RestMethod -Uri 'https://reddit.com/random/.json/'
+					   $Hot = $rSub.data.children.data
 					   }
 			   }
 		   }
@@ -77,14 +77,14 @@
 			   Switch($Sort)
 			   {
 				   random {
-					   $rSub = (Invoke-WebRequest -Uri "https://reddit.com/r/$Subreddit/random/.json").Content
-					   $Hot = ($rSub | ConvertFrom-Json).data.children.data
+					   $rSub = Invoke-RestMethod -Uri "https://reddit.com/r/$Subreddit/random/.json"
+					   $Hot = $rSub.data.children.data
 				   }
 
 				   `* {
 					   $Amount = 5
-					   $rSub = (Invoke-WebRequest -Uri "https://reddit.com/r/$Subreddit/.json?sort=top&t=week&limit=$Amount").Content
-					   $Hot = ($rSub | ConvertFrom-Json).data.$(Get-Random)%$Amount.children.data
+					   $rSub = Invoke-RestMetho -Uri "https://reddit.com/r/$Subreddit/.json?sort=top&t=week&limit=$Amount"
+					   $Hot = $rSub.data.$(Get-Random)%$Amount.children.data
 				   }
 			   }
 		   }
@@ -212,141 +212,174 @@
 		   send_message {
 			   # ($EnableMarkdown) -and ($TextID = roba
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendMessage" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "reply_markup=$MarkupID", `
-			   "text=$Markdown[0]$TextID$Markdown[1]"
+			   -Body @{
+				   "chat_id" = $ChatID
+				   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+				   "reply_markup" = $MarkupID
+			   	   "text" = "$Markdown[0]$TextID$Markdown[1]"
+			   }
 		   }
 
 		   send_photo {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendPhoto" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "caption=$Caption", `
-			   "photo=$PhotoID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+				   "caption" = $Caption
+			   	   "photo" = $PhotoID
+			   }
 		   }
 
 		   send_document {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendDocument" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "caption=$Caption", `
-			   "document=$DocumentID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+			   	   "caption" = $Caption
+			   	   "document" = $DocumentID
+			   }
 		   }
 
 
 		   send_video {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendVideo" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "thumb=$Thumb", `
-			   "caption=$Caption", `
-			   "video=$VideoID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+			   	   "thumb" = $Thumb
+			   	   "caption" = $Caption
+			   	   "video" = $VideoID
+			   }
 		   }
 
 		   send_mediagroup {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendMediaGroup" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "caption=$Caption", `
-			   "media=$MediagroupID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+			   	   "caption" = $Caption
+			   	   "media" = $MediagroupID
+			   }
 		   }
 
 		   send_audio {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendAudio" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "caption=$Caption", `
-			   "audio=$AudioID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+			   	   "caption" = $Caption
+			   	   "audio" = $AudioID
+			   }
 		   }
 
 		   send_voice {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendVoice" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "caption=$Caption", `
-			   "voice=$VoiceID"
+			   -Body @{
+				   "chat_id" = $ChatID
+				   "parse_mode" = "html"
+				   "reply_to_message_id" = $ReplyID
+			   	   "caption" = $Caption
+			   	   "voice" = $VoiceID
+			   }
 		   }
 
 		   send_animation {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendAnimation" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "caption=$Caption", `
-			   "animation=$AnimationID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+			   	   "caption" = $Caption
+			   	   "animation" = $AnimationID
+			   }
 		   }
 
 		   send_sticker {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendSticker" `
-			   -Body "chat_id=$ChatID", `
-			   "parse_mode=html", `
-			   "reply_to_message_id=$ReplyID", `
-			   "caption=$Caption", `
-			   "sticker=$StickerID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "parse_mode" = "html"
+			   	   "reply_to_message_id" = $ReplyID
+			   	   "caption" = $Caption
+			   	   "sticker" = $StickerID
+			   }
 		   }
 
 		   send_inline {
 			   Invoke-RestMethod -Uri "$TelegramAPI/answerInlineQuery" `
-			   -Body "inline_query_id=$InlineID", `
-			   "results=$ReturnQuery", `
-			   "next_offset=$Offset", `
-			   "cache_time=0", `
-			   "is_personal=true"
+			   -Body @{
+				   "inline_query_id" = $InlineID
+			   	   "results" = $ReturnQuery
+			   	   "next_offset" = $Offset
+			   	   "cache_time" = "0"
+			   	   "is_personal" = "true"
+			   }
 		   }
 
 		   forward_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/forwardMessage" `
-			   -Body "chat_id=$ChatID", `
-			   "from_chat_id=$FromChatID", `
-			   "message_id=$ForwardID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "from_chat_id" = $FromChatID
+			   	   "message_id" = $ForwardID
+			   }
 		   }
 
 		   inline_reply {
 			   Invoke-RestMethod -Uri "$TelegramAPI/answerInlineQuery" `
-			   -Body "inline_query_id=$InlineQueryID", `
-			   "results=$ReturnQuery", `
-			   "next_offset=$Offset", `
-			   "cache_time=0", `
-			   "is_personal=true" | Out-File -Path /dev/null
+			   -Body @{
+				   "inline_query_id" = $InlineQueryID
+			   	   "results" = $ReturnQuery
+			   	   "next_offset" = $Offset
+			   	   "cache_time" = "0"
+			   	   "is_personal" = "true" 
+			   } | Out-File -Path /dev/null
 		   }
 
 		   button_reply {
 			   Invoke-RestMethod -Uri "$TelegramAPI/answerCallbackQuery" `
-			   -Body "callback_query_id=$CallbackID", `
-			   "text=$ButtonTextReply"
+			   -Body @{
+				   "callback_query_id" = $CallbackID
+			   	   "text" = $ButtonTextReply
+			   }
 		   }
 
 		   edit_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/editMessageText" `
-			   -Body "chat_id=$ChatID", `
-			   "message_id=$ToEditID", `
-			   "text=$EditText"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "message_id" = $ToEditID
+			   	   "text" = $EditText
+			   }
 		   }
 
 		   delete_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/deleteMessage" `
-			   -Body "chat_id=$ChatID", `
-			   "message_id=$ToDeleteID", `
-			   "text=$EditText"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "message_id" = $ToDeleteID
+			   	   "text" = $EditText
+			   }
 		   }
 
 		   copy_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/copyMessage" `
-			   -Body "chat_id=$ChatID", `
-			   "from_chat_id=$FromChatID", `
-			   "message_id=$MessageID"
+			   -Body @{
+				   "chat_id" = $ChatID
+			   	   "from_chat_id" = $FromChatID
+			   	   "message_id" = $MessageID
+			   }
 		   }
 
 		   set_chat_permissions {
-			   $Body = @{
+			   Invoke-RestMethod -Uri "$TelegramAPI/setChatPermissions" 
+			   -Body @{
 				   "chat_id" = $ChatID
 				   "permissions" = @{
 					   "can_send_messages" = $CanSendMessages
@@ -355,12 +388,14 @@
 					   "can_send_polls" = $CanSendPolls
 					   "can_add_web_pages_previews" = $CanAddWebPagesPreviews
 				   }
-			   }
-			   Invoke-RestMethod -Uri "$TelegramAPI/setChatPermissions" -Body ($Body | ConvertTo-Json)
+		   	   }
 		   }
 
 		   leave_chat {
-			   Invoke-RestMethod -Uri "$TelegramAPI/leaveChat" -Body "chat_id=$ChatID"
+			   Invoke-RestMethod -Uri "$TelegramAPI/leaveChat" 
+			   -Body @{
+				   "chat_id" = $ChatID
+			   }
 		   }
 
 		   get_me {
@@ -471,7 +506,7 @@
 	   {
 		   test {
 			   $TextID = $CallbackData
-			   Deploy-TGMethod button_reply | Out-Filr -Path /dev/null
+			   Deploy-TGMethod button_reply | Out-File -Path /dev/null
 			   $ChatID = $CallbackUserID
 			   Deploy-TGMethod send_message | Out-File -Path /dev/null
 		   }
@@ -479,9 +514,9 @@
    }
 
    function Invoke-ProcessReply {
-	   $Message = ($TGInput | ConvertTo-Json).message
-	   $Inline = ($TGInput | ConvertTo-Json).inline_query
-	   $Callback = ($TGInput | ConvertTo-Json).callback_query
+	   $Message = ($TGInput | ConvertFrom-Json).result.message
+	   $Inline = ($TGInput | ConvertFrom-Json).result.inline_query
+	   $Callback = ($TGInput | ConvertFrom-Json).result.callback_query
 	   $FileType = $Message.chat.type
 	   if (!$Message.text -and ($FileType -ne "private") -and !$Inline -and !$Callback)
 	   {
@@ -649,5 +684,4 @@
    Write-Host "[$(Get-Date -UFormat "%F %H:%M:%s")] elapsed time: $($EndTime-$StartTime) ms"
 
    Set-PSDebug -Off
-echo ciao
 } 2>&1 5>&1 >> "log.log" 
