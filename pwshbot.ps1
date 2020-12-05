@@ -421,9 +421,9 @@ function prompt {
 
 	   if ($TextID -ne '')
 	   {
-		   if (Test-Path -Path botinfo -PathType Leaf)
+		   if (!(Test-Path -Path botinfo -PathType Leaf))
 		   {
-			   Deploy-TGMethod get_me | Out-File -Path botinfo
+			   Deploy-TGMethod get_me | ConvertTo-Json | Out-File -Path botinfo
 		   }
 		   $TextID = (Get-Content -Path botinfo | ConvertFrom-Json).result.username
 		   $FileType = "text"
@@ -655,6 +655,7 @@ function prompt {
 	   }
 
 	   $PF = $TextID.ToCharArray() | select -First 1
+	   Write-Host $PF | out-file pf.lo
 	   if ( $PF -ne '!' -and $PF -ne '/')
 	   {
 		   $PF = ""
