@@ -1,4 +1,20 @@
 #!/usr/bin/pwsh
+
+<#
+    Copyright (c) 2020 Alessandro Piras
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#>
+
 param (
    $TGInput
 )
@@ -13,40 +29,40 @@ function prompt {
 
    $StartTime = Get-Date -UFormat %s
    
-   Set-PSDebug -Trace 1
+   Set-PSDebug -Trace 2
 
    function Invoke-Sth {
 	   param ( 
-	   $Arg1,
-	   $Arg2
+	   $global:Arg1,
+	   $global:Arg2
 	   )
 
-	   Switch($Arg1)
+	   Switch($global:Arg1)
 	   {
 		   1 {
-			   $TextID = "processing..."
-			   $ProcessingID = (Deploy-TGMethod send_message).result.message_id
+			   $global:TextID = "processing..."
+			   $global:ProcessingID = (Deploy-TGMethod send_message).result[0].message_id
 		   }
 
 		   2 {
-			   $ToEditID = $ProcessingID
-			   $EditText = "sending..."
-			   $EditedID = (Deploy-TGMethod edit_message).result.message_id
+			   $global:ToEditID = $global:ProcessingID
+			   $global:EditText = "sending..."
+			   $global:EditedID = (Deploy-TGMethod edit_message).result[0].message_id
 		   }
 
 		   3 {
-			   $ToDeleteID = $EditionID
+			   $global:ToDeleteID = $global:EditionID
 			   Deploy-TGMethod delete_message | Out-File -Path /dev/null
 		   }
 
 		   value {
-			   $ToEditID = $ProcessingID
-			   $EditText = $Arg2
-			   $ProcessingID = (Deploy-TGMethod edit_message).result.message_id
+			   $global:ToEditID = $global:ProcessingID
+			   $global:EditText = $global:Arg2
+			   $global:ProcessingID = (Deploy-TGMethod edit_message).result[0].message_id
 		   }
 
 		   error {
-			   $ToDeleteID = $ProcessingID
+			   $global:ToDeleteID = $global:ProcessingID
 			   Deploy-TGMethod delete_message | Out-File -Path /dev/null
 		   }
 	   }
@@ -55,147 +71,147 @@ function prompt {
    function Find-Subreddit {
 	   param (
 	   $TGInput,
-	   $Key
+	   $global:Key
 	   )
 
-	   $Subreddit = $TGInput
-	   $Sort = $Key
-	   $EnableMarkdown = $true
-	   Switch($Subreddit)
+	   $global:Subreddit = $TGInput
+	   $global:Sort = $global:Key
+	   $global:EnableMarkdown = $global:true
+	   Switch($global:Subreddit)
 	   {
 		   none {
-			   Switch($Sort)
+			   Switch($global:Sort)
 			   {
 				   random {
-					   $rSub = Invoke-RestMethod -Uri 'https://reddit.com/random/.json/'
-					   $Hot = $rSub.data.children.data
+					   $global:rSub = Invoke-RestMethod -Uri 'https://reddit.com/random/.json/'
+					   $global:Hot = $global:rSub.data.children.data
 					   }
 			   }
 		   }
 
 		   `* {
-			   Switch($Sort)
+			   Switch($global:Sort)
 			   {
 				   random {
-					   $rSub = Invoke-RestMethod -Uri "https://reddit.com/r/$Subreddit/random/.json"
-					   $Hot = $rSub.data.children.data
+					   $global:rSub = Invoke-RestMethod -Uri "https://reddit.com/r/$global:Subreddit/random/.json"
+					   $global:Hot = $global:rSub.data.children.data
 				   }
 
 				   `* {
-					   $Amount = 5
-					   $rSub = Invoke-RestMetho -Uri "https://reddit.com/r/$Subreddit/.json?sort=top&t=week&limit=$Amount"
-					   $Hot = $rSub.data.$(Get-Random)%$Amount.children.data
+					   $global:Amount = 5
+					   $global:rSub = Invoke-RestMetho -Uri "https://reddit.com/r/$global:Subreddit/.json?sort=top&t=week&limit=$global:Amount"
+					   $global:Hot = $global:rSub.data.$(Get-Random)%$global:Amount.children.data
 				   }
 			   }
 		   }
 	   }
-	   $MediaID = ($Hot | Select-String -Pattern "i.redd.it`|imgur`|gfycat" -Raw).url
-	   if ($MediaID | Select-String -Pattern "gfycat" -Raw)
+	   $global:MediaID = ($global:Hot | Select-String -Pattern "i.redd.it`|imgur`|gfycat" -Raw).url
+	   if ($global:MediaID | Select-String -Pattern "gfycat" -Raw)
 	   {
-		   $MediaID = Invoke-RestMethod -Uri $MediaID 	# | SED BLA BLA BLA
+		   $global:MediaID = Invoke-RestMethod -Uri $global:MediaID 	# | SED BLA BLA BLA
 	   }
-	   $Permalink = $Hot.permalink
-	   $Title = $Hot.title 					# | SED BLA BLA BLA
-	   $StickerID = $Hot.stickied
-	   if ($Title)
+	   $global:Permalink = $global:Hot.permalink
+	   $global:Title = $global:Hot.title 					# | SED BLA BLA BLA
+	   $global:StickerID = $global:Hot.stickied
+	   if ($global:Title)
 	   {
-		   $Caption = "`n $Title `n link: <a href=`"https://reddit.com$Permalink`">$Permalink</a>"
+		   $global:Caption = "`n $global:Title `n link: <a href=`"https://reddit.com$global:Permalink`">$global:Permalink</a>"
 	   }
-	   if ($MediaID)
+	   if ($global:MediaID)
 	   {
-		   $TextID = $Caption
+		   $global:TextID = $global:Caption
 		   Deploy-TGMethod send_message | Out-File -Path /dev/null
 	   }
-	   elseif ($MediaID | Select-String -Pattern "jpg`|png" -Raw)
+	   elseif ($global:MediaID | Select-String -Pattern "jpg`|png" -Raw)
 	   {
-		   $PhotoID = $MediaID
+		   $global:PhotoID = $global:MediaID
 		   Deploy-TGMethod send_photo | Out-File -Path /dev/null
 	   }
-	   elseif ($MediaID | Select-String -Pattern "gif")
+	   elseif ($global:MediaID | Select-String -Pattern "gif")
 	   {
-		   $AnimationID = $MediaID
+		   $global:AnimationID = $global:MediaID
 		   Deploy-TGMethod send_animation | Out-File -Path /dev/null
 	   }
-	   elseif (($MediaID | Select-String -Pattern "mp4") -and !(ffprobe "$MediaID" 2>&1 | Select-String -Pattern 'Audio:' -Quiet))
+	   elseif (($global:MediaID | Select-String -Pattern "mp4") -and !(ffprobe "$global:MediaID" 2>&1 | Select-String -Pattern 'Audio:' -Quiet))
 	   {
-		   $AnimationID = $MediaID
+		   $global:AnimationID = $global:MediaID
 		   Deploy-TGMethod send_animation | Out-File -Path /dev/null
 	   }
-	   elseif (($MediaID | Select-String -Pattern "mp4") -and (ffprobe "$MediaID" 2>&1 | Select-String -Pattern 'Audio:' -Quiet))
+	   elseif (($global:MediaID | Select-String -Pattern "mp4") -and (ffprobe "$global:MediaID" 2>&1 | Select-String -Pattern 'Audio:' -Quiet))
 	   {
-		   $VideoID = $MediaID
+		   $global:VideoID = $global:MediaID
 		   Deploy-TGMethod send_video | Out-File -Path /dev/null
 	   }
    }
 
    function Invoke-PhotoArray {
-	   $Obj = @()
-	   for ( $x = 0; $x -le $j; $x++)
+	   $global:Obj = @()
+	   for ( $global:x = 0; $global:x -le $global:j; $global:x++)
 	   {
-		   $Obj += @{
+		   $global:Obj += @{
 			   'type' = 'photo'
-			   'media' = $Media[$x]
+			   'media' = $global:Media[$global:x]
 		   }
 	   }
    }
 
    function Invoke-InLine {
 	   param (
-	   $Arg1
+	   $global:Arg1
 	   )
 
-	   ($j -eq "") -and ($j = 0)
+	   ($global:j -eq "") -and ($global:j = 0)
 
-	   Switch($Arg1)
+	   Switch($global:Arg1)
 	   {
 		   article {
-			   for ($x = 0; $x -le $j; $x++)
+			   for ($global:x = 0; $global:x -le $global:j; $global:x++)
 			   {
-				   $Obj[$x] = @{
+				   $global:Obj[$global:x] = @{
 					   'type' = 'article'
 					   'id' = Get-Random
-					   'title' = $Title[$x]
+					   'title' = $global:Title[$global:x]
 					   'input_message_content' = @{
-						   'message_text' = $Markdown[0]+$MessageText[$x]+$Markdown[1]
+						   'message_text' = $global:Markdown[0]+$global:MessageText[$global:x]+$global:Markdown[1]
 						   'parse_mode' = 'html'
 					   }
-					   'description' = $Description[$x]
+					   'description' = $global:Description[$global:x]
 				   }
 			   }
 		   }
 
 		   photo {
-			   for ($x = 0; $x -le $j; $x++)
+			   for ($global:x = 0; $global:x -le $global:j; $global:x++)
 			   {
-				   $Obj[$x] = @{
+				   $global:Obj[$global:x] = @{
 					   'type' = 'photo'
 					   'id' = Get-Random
-					   'photo_url' = $PhotoURL[$x]
-					   'thumb_url' = $ThumbURL[$x]
-					   'caption' = $Caption[$x]
+					   'photo_url' = $global:PhotoURL[$global:x]
+					   'thumb_url' = $global:ThumbURL[$global:x]
+					   'caption' = $global:Caption[$global:x]
 				   }
 			   }
 		   }
 
 		   gif {
-			   for ($x = 0; $x -le $j; $x++)
+			   for ($global:x = 0; $global:x -le $global:j; $global:x++)
 			   {
-				   $Obj[$x] = @{
+				   $global:Obj[$global:x] = @{
 					   'type' = 'gif'
 					   'id' = Get-Random
-					   'gif_url' = $GifURL[$x]
-					   'thumb_url' = $ThumbURL[$x]
-					   'caption' = $Caption[$x]
+					   'gif_url' = $global:GifURL[$global:x]
+					   'thumb_url' = $global:ThumbURL[$global:x]
+					   'caption' = $global:Caption[$global:x]
 				   }
 			   }
 		   }
 
 		   button {
-			   for ($x = 0; $x -le $j; $x++)
+			   for ($global:x = 0; $global:x -le $global:j; $global:x++)
 			   {
-				   $Obj[$x] = @{
-					   'text' = $ButtonText[$x]
-					   'callback_data' = $ButtonText[$x]
+				   $global:Obj[$global:x] = @{
+					   'text' = $global:ButtonText[$global:x]
+					   'callback_data' = $global:ButtonText[$global:x]
 				   }
 			   }
 		   }
@@ -210,36 +226,36 @@ function prompt {
 	   Switch($TGInput)
 	   {
 		   send_message {
-			   # ($EnableMarkdown) -and ($TextID = roba
+			   # ($global:EnableMarkdown) -and ($global:TextID = roba
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendMessage" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 				   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-				   "reply_markup" = $MarkupID
-			   	   "text" = "$Markdown[0]$TextID$Markdown[1]"
+			   	   "reply_to_message_id" = $global:ReplyID
+				   "reply_markup" = $global:MarkupID
+			   	   "text" = "$global:Markdown[0]$global:TextID$global:Markdown[1]"
 			   }
 		   }
 
 		   send_photo {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendPhoto" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   	   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-				   "caption" = $Caption
-			   	   "photo" = $PhotoID
+			   	   "reply_to_message_id" = $global:ReplyID
+				   "caption" = $global:Caption
+			   	   "photo" = $global:PhotoID
 			   }
 		   }
 
 		   send_document {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendDocument" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   	   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-			   	   "caption" = $Caption
-			   	   "document" = $DocumentID
+			   	   "reply_to_message_id" = $global:ReplyID
+			   	   "caption" = $global:Caption
+			   	   "document" = $global:DocumentID
 			   }
 		   }
 
@@ -247,76 +263,76 @@ function prompt {
 		   send_video {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendVideo" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   	   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-			   	   "thumb" = $Thumb
-			   	   "caption" = $Caption
-			   	   "video" = $VideoID
+			   	   "reply_to_message_id" = $global:ReplyID
+			   	   "thumb" = $global:Thumb
+			   	   "caption" = $global:Caption
+			   	   "video" = $global:VideoID
 			   }
 		   }
 
 		   send_mediagroup {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendMediaGroup" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   	   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-			   	   "caption" = $Caption
-			   	   "media" = $MediagroupID
+			   	   "reply_to_message_id" = $global:ReplyID
+			   	   "caption" = $global:Caption
+			   	   "media" = $global:MediagroupID
 			   }
 		   }
 
 		   send_audio {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendAudio" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   	   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-			   	   "caption" = $Caption
-			   	   "audio" = $AudioID
+			   	   "reply_to_message_id" = $global:ReplyID
+			   	   "caption" = $global:Caption
+			   	   "audio" = $global:AudioID
 			   }
 		   }
 
 		   send_voice {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendVoice" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 				   "parse_mode" = "html"
-				   "reply_to_message_id" = $ReplyID
-			   	   "caption" = $Caption
-			   	   "voice" = $VoiceID
+				   "reply_to_message_id" = $global:ReplyID
+			   	   "caption" = $global:Caption
+			   	   "voice" = $global:VoiceID
 			   }
 		   }
 
 		   send_animation {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendAnimation" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   	   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-			   	   "caption" = $Caption
-			   	   "animation" = $AnimationID
+			   	   "reply_to_message_id" = $global:ReplyID
+			   	   "caption" = $global:Caption
+			   	   "animation" = $global:AnimationID
 			   }
 		   }
 
 		   send_sticker {
 			   Invoke-RestMethod -Uri "$TelegramAPI/sendSticker" `
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   	   "parse_mode" = "html"
-			   	   "reply_to_message_id" = $ReplyID
-			   	   "caption" = $Caption
-			   	   "sticker" = $StickerID
+			   	   "reply_to_message_id" = $global:ReplyID
+			   	   "caption" = $global:Caption
+			   	   "sticker" = $global:StickerID
 			   }
 		   }
 
 		   send_inline {
 			   Invoke-RestMethod -Uri "$TelegramAPI/answerInlineQuery" `
 			   -Body @{
-				   "inline_query_id" = $InlineID
-			   	   "results" = $ReturnQuery
-			   	   "next_offset" = $Offset
+				   "inline_query_id" = $global:InlineID
+			   	   "results" = $global:ReturnQuery
+			   	   "next_offset" = $global:Offset
 			   	   "cache_time" = "0"
 			   	   "is_personal" = "true"
 			   }
@@ -325,18 +341,18 @@ function prompt {
 		   forward_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/forwardMessage" `
 			   -Body @{
-				   "chat_id" = $ChatID
-			   	   "from_chat_id" = $FromChatID
-			   	   "message_id" = $ForwardID
+				   "chat_id" = $global:ChatID
+			   	   "from_chat_id" = $global:FromChatID
+			   	   "message_id" = $global:ForwardID
 			   }
 		   }
 
 		   inline_reply {
 			   Invoke-RestMethod -Uri "$TelegramAPI/answerInlineQuery" `
 			   -Body @{
-				   "inline_query_id" = $InlineQueryID
-			   	   "results" = $ReturnQuery
-			   	   "next_offset" = $Offset
+				   "inline_query_id" = $global:InlineQueryID
+			   	   "results" = $global:ReturnQuery
+			   	   "next_offset" = $global:Offset
 			   	   "cache_time" = "0"
 			   	   "is_personal" = "true" 
 			   } | Out-File -Path /dev/null
@@ -345,48 +361,48 @@ function prompt {
 		   button_reply {
 			   Invoke-RestMethod -Uri "$TelegramAPI/answerCallbackQuery" `
 			   -Body @{
-				   "callback_query_id" = $CallbackID
-			   	   "text" = $ButtonTextReply
+				   "callback_query_id" = $global:CallbackID
+			   	   "text" = $global:ButtonTextReply
 			   }
 		   }
 
 		   edit_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/editMessageText" `
 			   -Body @{
-				   "chat_id" = $ChatID
-			   	   "message_id" = $ToEditID
-			   	   "text" = $EditText
+				   "chat_id" = $global:ChatID
+			   	   "message_id" = $global:ToEditID
+			   	   "text" = $global:EditText
 			   }
 		   }
 
 		   delete_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/deleteMessage" `
 			   -Body @{
-				   "chat_id" = $ChatID
-			   	   "message_id" = $ToDeleteID
-			   	   "text" = $EditText
+				   "chat_id" = $global:ChatID
+			   	   "message_id" = $global:ToDeleteID
+			   	   "text" = $global:EditText
 			   }
 		   }
 
 		   copy_message {
 			   Invoke-RestMethod -Uri "$TelegramAPI/copyMessage" `
 			   -Body @{
-				   "chat_id" = $ChatID
-			   	   "from_chat_id" = $FromChatID
-			   	   "message_id" = $MessageID
+				   "chat_id" = $global:ChatID
+			   	   "from_chat_id" = $global:FromChatID
+			   	   "message_id" = $global:MessageID
 			   }
 		   }
 
 		   set_chat_permissions {
 			   Invoke-RestMethod -Uri "$TelegramAPI/setChatPermissions" 
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 				   "permissions" = @{
-					   "can_send_messages" = $CanSendMessages
-					   "can_send_media_messages" = $CanSendMediaMessages
-					   "can_send_other_messages" = $CanSendOtherMessages
-					   "can_send_polls" = $CanSendPolls
-					   "can_add_web_pages_previews" = $CanAddWebPagesPreviews
+					   "can_send_messages" = $global:CanSendMessages
+					   "can_send_media_messages" = $global:CanSendMediaMessages
+					   "can_send_other_messages" = $global:CanSendOtherMessages
+					   "can_send_polls" = $global:CanSendPolls
+					   "can_add_web_pages_previews" = $global:CanAddWebPagesPreviews
 				   }
 		   	   }
 		   }
@@ -394,7 +410,7 @@ function prompt {
 		   leave_chat {
 			   Invoke-RestMethod -Uri "$TelegramAPI/leaveChat" 
 			   -Body @{
-				   "chat_id" = $ChatID
+				   "chat_id" = $global:ChatID
 			   }
 		   }
 
@@ -409,269 +425,269 @@ function prompt {
 	   $TGInput
 	   )
 
-	   ($TGInput -eq "reply") -and ($Message = $ReplyToMessage)
-	   $TextID = $Message.text
-	   $PhotoID = $Message.photo."0".file_id
-	   $AnimationID = $Message.animation.file_id
-	   $VideoID = $Message.video.file_id
-	   $StickerID = $Message.sticket.file_id
-	   $AudioID = $Message.audio.file_id
-	   $VoiceID = $Message.voice.file_id
-	   $DocumentID = $Message.document.file_id
+	   ($TGInput -eq "reply") -and ($global:Message = $global:ReplyToMessage)
+	   $global:TextID = $global:Message.text
+	   $global:PhotoID = $global:Message.photo."0".file_id
+	   $global:AnimationID = $global:Message.animation.file_id
+	   $global:VideoID = $global:Message.video.file_id
+	   $global:StickerID = $global:Message.sticket.file_id
+	   $global:AudioID = $global:Message.audio.file_id
+	   $global:VoiceID = $global:Message.voice.file_id
+	   $global:DocumentID = $global:Message.document.file_id
 
-	   if ($TextID -ne '')
+	   if ($global:TextID)
 	   {
 		   if (!(Test-Path -Path botinfo -PathType Leaf))
 		   {
 			   Deploy-TGMethod get_me | ConvertTo-Json | Out-File -Path botinfo
 		   }
-		   $TextID = (Get-Content -Path botinfo | ConvertFrom-Json).result.username
-		   $FileType = "text"
+		   # $global:TextID = (Get-Content -Path botinfo | ConvertFrom-Json).result[0].username
+		   $global:FileType = "text"
 	   }
 
-	   if ($StickerID -ne '')
+	   if ($global:StickerID)
 	   {
-		   $FileType = 'sticker'
+		   $global:FileType = 'sticker'
 	   }
 
-	   if ($AminationID -ne '')
+	   if ($global:AnimationID)
 	   {
-		   $FileType = 'animation'
+		   $global:FileType = 'animation'
 	   }
 
-	   if ($PhotoID -ne '')
+	   if ($global:PhotoID)
 	   {
-		   $FileType = 'photo'
+		   $global:FileType = 'photo'
 	   }
 
-	   if ($VideoID -ne '')
+	   if ($global:VideoID)
 	   {
-		   $FileType = 'video'
+		   $global:FileType = 'video'
 	   }
 
-	   if ($AudioID -ne '')
+	   if ($global:AudioID)
 	   {
-		   $FileType = 'audio'
+		   $global:FileType = 'audio'
 	   }
 
-	   if ($VoiceID -ne '')
+	   if ($global:VoiceID)
 	   {
-		   $FileType = 'voice'
+		   $global:FileType = 'voice'
 	   }
 
-	   if ($DocumentID -ne '')
+	   if ($global:DocumentID)
 	   {
-		   $FileType = 'document'
+		   $global:FileType = 'document'
 	   }
    }
 
    function Get-NormalReply {
-	   Switch($FirstNormal)
+	   Switch($global:FirstNormal)
 	   {
-		   $PF+'start' {
-			   $TextID = "This is a PowerShell Bot, use /source to download."
-			   $ReplyID = $MessageID
+		   $global:PF'start' {
+			   $global:TextID = "This is a PowerShell Bot, use /source to download."
+			   $global:ReplyID = $global:MessageID
 			   Deploy-TGMethod send_message | Out-File -Path /dev/null
 		   }
 
-		   $PF+'source' {
-			   $TextID = "Download PowerShell Bot source from <https://github.com/adamantinum/PSTelegramBot>"
-			   $ReplyID = $MessageID
+		   $global:PF'source' {
+			   $global:TextID = "Download PowerShell Bot source from <https://github.com/adamantinum/PSTelegramBot>"
+			   $global:ReplyID = $global:MessageID
 			   Deploy-TGMethod send_message | Out-File -Path /dev/null
 		   }
 
-		   $PF+'help' {
-			   $TextID = Get-Content -Path README.md
-			   $ReplyID = $MessageID
+		   $global:PF'help' {
+			   $global:TextID = Get-Content -Path README.md
+			   $global:ReplyID = $global:MessageID
 			   Deploy-TGMethod send_message | Out-File -path /dev/null
 		   }
 	   }
    }
 
    function Get-Inlinereply {
-	   Switch($Result)
+	   Switch($global:Result)
 	   {
 		   'ok' {
-			   $Title = 'Ok'
-			   $MessageText = 'Ok'
-			   $Description = 'Alright'
-			   $ReturnQuery = Invoke-InLine article
+			   $global:Title = 'Ok'
+			   $global:MessageText = 'Ok'
+			   $global:Description = 'Alright'
+			   $global:ReturnQuery = Invoke-InLine article
 			   Deploy-TGMethod send_inline | Out-File -Path /dev/null
 		   }
 	   }
    }
 
    function Get-ButtonReply {
-	   Switch($CallbackMessageText)
+	   Switch($global:CallbackMessageText)
 	   {
 		   test {
-			   $TextID = $CallbackData
+			   $global:TextID = $global:CallbackData
 			   Deploy-TGMethod button_reply | Out-File -Path /dev/null
-			   $ChatID = $CallbackUserID
+			   $global:ChatID = $global:CallbackUserID
 			   Deploy-TGMethod send_message | Out-File -Path /dev/null
 		   }
 	   }
    }
 
    function Invoke-ProcessReply {
-	   $Message = ($TGInput | ConvertFrom-Json).result.message
-	   $Inline = ($TGInput | ConvertFrom-Json).result.inline_query
-	   $Callback = ($TGInput | ConvertFrom-Json).result.callback_query
-	   $FileType = $Message.chat.type
-	   if (!$Message.text -and ($FileType -ne "private") -and !$Inline -and !$Callback)
+	   $global:Message = ($TGInput | ConvertFrom-Json).result[0].message
+	   $global:Inline = ($TGInput | ConvertFrom-Json).result[0].inline_query
+	   $global:Callback = ($TGInput | ConvertFrom-Json).result[0].callback_query
+	   $global:FileType = $global:Message.chat.type
+	   if (!$global:Message.text -and ($global:FileType -ne "private") -and !$global:Inline -and !$global:Callback)
 	   {
-		   exit
+		   return
 	   }
 
 	   # User database
-	   $UsernameTag = $Message.from.username
-	   $UsernameID = $Message.from.id
-	   $UsernameFirstName = $Message.from.first_name
-	   $UsernameLastName = $Messange.from.last_name
-	   if ($UsernameID)
+	   $global:UsernameTag = $global:Message.from.username
+	   $global:UsernameID = $global:Message.from.id
+	   $global:UsernameFirstName = $global:Message.from.first_name
+	   $global:UsernameLastName = $global:Messange.from.last_name
+	   if ($global:UsernameID)
 	   {
 		   !(Test-Path -Path db/users -PathType Container) -and (New-Item -Name db/users/ -ItemType Directory)
-		   $FileUser = "db/users/$UsernameTag"
-		   if (!(Test-Path -Path $FileUser -PathType Leaf))
+		   $global:FileUser = "db/users/$global:UsernameTag"
+		   if (!(Test-Path -Path $global:FileUser -PathType Leaf))
 		   {
-			   (!$UsernameTag) -and ($UsernameTag = "(empty)")
+			   (!$global:UsernameTag) -and ($global:UsernameTag = "(empty)")
 			   @{
-				   'tag' = $UsernameTag
-				   'id' = $UsernameID
-				   'fname' = $UsernameFirstName
-				   'lname' = $UsernameLastName
-			   } | ConvertTo-Json | Out-File -Path $FileUser
+				   'tag' = $global:UsernameTag
+				   'id' = $global:UsernameID
+				   'fname' = $global:UsernameFirstName
+				   'lname' = $global:UsernameLastName
+			   } | ConvertTo-Json | Out-File -Path $global:FileUser
 		   }
 		   
-		   if ("tag: $UsernameTag" -ne (Select-String -LiteralPath $FileUser -Pattern "tag" -Raw))
+		   if ("tag: $global:UsernameTag" -ne (Select-String -LiteralPath $global:FileUser -Pattern "tag" -Raw))
 		   {
-			   $FileUser = $FileUser -replace "tag: .*", "tag :$UsernameTag"
+			   $global:FileUser = $global:FileUser -replace "tag: .*", "tag :$global:UsernameTag"
 		   }
 
-		   if ("fname: $UsernameFirstName" -ne (Select-String -LiternalPath $FileUser -Pattern "fname" -Raw))
+		   if ("fname: $global:UsernameFirstName" -ne (Select-String -LiteralPath $global:FileUser -Pattern "fname" -Raw))
 		   {
-			   $FileUser = $FileUser -replace "fname: .*", "fname: $UsernameFirstName"
+			   $global:FileUser = $global:FileUser -replace "fname: .*", "fname: $global:UsernameFirstName"
 		   }
 
-		   if ("lname: $UsernameLastName" -ne (Select-String -LiternalPath $FileUser -Pattern "lname" -Raw))
+		   if ("lname: $global:UsernameLastName" -ne (Select-String -LiteralPath $global:FileUser -Pattern "lname" -Raw))
 		   {
-			   $FileUser = $FileUser -replace "lname: .*", "lname: $UsernameLastName"
+			   $global:FileUser = $global:FileUser -replace "lname: .*", "lname: $global:UsernameLastName"
 		   }
 	   }
-	   $ReplyToMessage = $Message.reply_to_message
-	   if ($ReplyToMessage)
+	   $global:ReplyToMessage = $global:Message.reply_to_message
+	   if ($global:ReplyToMessage)
 	   {
-		   $ReplyToID = $ReplyToMessage.message_id
-		   $ReplyToUserID = $ReplyToMessage.from.id
-		   $ReplyToUserTag = $ReplyToMessage.from.username
-		   $ReplyToUserFirstName = $ReplyToMessage.from.first_name
-		   $ReplyToUserLastName = $ReplyToMessage.from.last_name
-		   $ReplyToText = $ReplyToMessage.text
+		   $global:ReplyToID = $global:ReplyToMessage.message_id
+		   $global:ReplyToUserID = $global:ReplyToMessage.from.id
+		   $global:ReplyToUserTag = $global:ReplyToMessage.from.username
+		   $global:ReplyToUserFirstName = $global:ReplyToMessage.from.first_name
+		   $global:ReplyToUserLastName = $global:ReplyToMessage.from.last_name
+		   $global:ReplyToText = $global:ReplyToMessage.text
 		   !(Test-Path -Path db/users -PathType Container) -and (New-Item -Name db/users/ -ItemType Directory)
-		   $FileReplyUser = "db/users/$ReplyToUserTag"
-		   if (Test-Path -Path $FileReplyUser -PathType Leaf)
+		   $global:FileReplyUser = "db/users/$global:ReplyToUserTag"
+		   if (Test-Path -Path $global:FileReplyUser -PathType Leaf)
 		   {
-			   (!$ReplyToUserTag) -and ($ReplyToUserTag = "(empty)")
+			   (!$global:ReplyToUserTag) -and ($global:ReplyToUserTag = "(empty)")
 			   @{
-				   'tag' = $ReplyToUserTag
-				   'id' = $ReplyToUserID
-				   'fname' = $ReplyToUserFirstName
-				   'lname' = $ReplyToUserLastName
-			   } | ConvertTo-Json | Out-File -Path $FileReplyUser
+				   'tag' = $global:ReplyToUserTag
+				   'id' = $global:ReplyToUserID
+				   'fname' = $global:ReplyToUserFirstName
+				   'lname' = $global:ReplyToUserLastName
+			   } | ConvertTo-Json | Out-File -Path $global:FileReplyUser
 		   }
 	   }
 
 	   # Chat database
-	   $ChatTitle = $Message.chat.title
-	   $ChatID = $Message.chat.id
-	   if ($ChatTitle)
+	   $global:ChatTitle = $global:Message.chat.title
+	   $global:ChatID = $global:Message.chat.id
+	   if ($global:ChatTitle)
 	   {
 		   !(Test-Path -Path db/chats -PathType Container) -and (New-item -Name db/chats -ItemType Directory)
-		   $FileChat = "db/chats/$ChatID"
-		   if (!(Test-Path -Path $FileChat -PathType Leaf))
+		   $global:FileChat = "db/chats/$global:ChatID"
+		   if (!(Test-Path -Path $global:FileChat -PathType Leaf))
 		   {
 			   @{
-				   'title' = $ChatTitle
-				   'id' = $ChatID
-				   'type' = $FileType
-			   } | ConvertTo-Json | Out-File -Path $FileChat
+				   'title' = $global:ChatTitle
+				   'id' = $global:ChatID
+				   'type' = $global:FileType
+			   } | ConvertTo-Json | Out-File -Path $global:FileChat
 		   }
 	   }
 
-	   $CallBackUser = $Callback.from.username
-	   $CallbackUserID = $Callback.from.id
-	   $CallbackID = $Callback.id
-	   $CallbackData = $Callback.data
-	   $CallbackMessageText = $Callback.message.text
+	   $global:CallBackUser = $global:Callback.from.username
+	   $global:CallbackUserID = $global:Callback.from.id
+	   $global:CallbackID = $global:Callback.id
+	   $global:CallbackData = $global:Callback.data
+	   $global:CallbackMessageText = $global:Callback.message.text
 
-	   if ( $FileType -eq "private" -or $Inline -or $Callback)
+	   if ( $global:FileType -eq "private" -or $global:Inline -or $global:Callback)
 	   {
-		   $BotChatDir = "db/bot_chats"
-		   $BotChatUserID = $UsernameID
+		   $global:BotChatDir = "db/bot_chats"
+		   $global:BotChatUserID = $global:UsernameID
 	   }
 	   else
 	   {
-		   $BotChatID = "db/bot_group_chats"
-		   $BotChatUserID = $ChatID
+		   $global:BotChatID = "db/bot_group_chats"
+		   $global:BotChatUserID = $global:ChatID
 	   }
 
-	   $MessageID = $Message.message_id
-	   $InlineUser = $Inline.from.username
-	   $InlineUserID = $Inline.from.id
-	   $InlineID = $Inline.id
-	   $Results = $Inline.query
+	   $global:MessageID = $global:Message.message_id
+	   $global:InlineUser = $global:Inline.from.username
+	   $global:InlineUserID = $global:Inline.from.id
+	   $global:InlineID = $global:Inline.id
+	   $global:Results = $global:Inline.query
 
 	   Get-FileType
 
-	   Switch ($FileType)
+	   Switch ($global:FileType)
 	   {
 		   text {
-			   $FirstNormal = $TextID
+			   $global:FirstNormal = $global:TextID
 		   }
 		   
 		   photo {
-			   $FirstNormal = $PhotoID
+			   $global:FirstNormal = $global:PhotoID
 		   }
 		   
 		   animation {
-			   $FirstNormal = $AnimationID
+			   $global:FirstNormal = $global:AnimationID
 		   }
 		   
 		   video {
-			   $FirstNormal = $VideoID
+			   $global:FirstNormal = $global:VideoID
 		   }
 		   
 		   audio {
-			   $FirstNormal = $AudioID
+			   $global:FirstNormal = $global:AudioID
 		   }
 
 		   voice {
-			   $FirstNormal = $VoiceID
+			   $global:FirstNormal = $global:VoiceID
 		   }
 
 		   document {
-			   $FirstNormal = $DocumentID
+			   $global:FirstNormal = $global:DocumentID
 		   }
 	   }
 
-	   $PF = $TextID.ToCharArray() | select -First 1
-	   Write-Host $PF | out-file pf.lo
-	   if ( $PF -ne '!' -and $PF -ne '/')
+	   $global:PF = $global:TextID.ToCharArray() | select -First 1
+	   
+	   if ( $global:PF -ne '!' -and $global:PF -ne '/')
 	   {
-		   $PF = ""
+		   $global:PF = ""
 	   }
 
-	   if ($FirstNormal)
+	   if ($global:FirstNormal)
 	   {
 		   Get-NormalReply
 		   # source?
 	   }
-	   elseif ($Results)
+	   elseif ($global:Results)
 	   {
 		   Get-Inlinereply
 		   # source?
 	   }
-	   elseif ($CallbackData)
+	   elseif ($global:CallbackData)
 	   {
 		   Get-ButtonReply
 		   # source?
@@ -682,7 +698,7 @@ function prompt {
 
    $EndTime = Get-Date -UFormat %s
 
-   Write-Host "[$(Get-Date -UFormat "%F %H:%M:%s")] elapsed time: $($EndTime-$StartTime) ms"
+   Write-Host "[$(Get-Date -UFormat "%F %H:%M:%s")] elapsed time: $($global:EndTime-$global:StartTime) ms"
 
    Set-PSDebug -Off
 } 2>&1 5>&1 >> "log.log" 
