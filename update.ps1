@@ -24,5 +24,4 @@ while (1)
 
 	$TGInput = (Invoke-WebRequest -Uri "$TelegramAPI/getUpdates").Content
 	./pwshbot $TGInput
-	$TGInput
 }
