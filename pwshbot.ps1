@@ -500,7 +500,7 @@ function prompt {
 		   }
 
 		   $Global:PF'help' {
-			   $Global:TextID = Get-Content -LiteralPath README.md
+			   $Global:TextID = [string](Get-Content -LiteralPath README.md)
 			   $Global:ReplyID = $Global:MessageID
 			   Deploy-TGMethod send_message | Out-File -path /dev/null
 		   }
