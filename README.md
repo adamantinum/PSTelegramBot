@@ -17,7 +17,11 @@
 
 Simple Telegram Bot written in PowerShell, based on mksh bot by <https://gitlab.com/craftmallus/neekshell-telegrambot>. The bot has not been tested yet.
 
-TODO1
+CHANGELOG
+
+- Written reddit fetch
+
+TODO
 
 - Write custom replies
 - Test if it works

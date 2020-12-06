@@ -73,52 +73,52 @@ function prompt {
 
    function Find-Subreddit {
 	   param (
-	   $TGInput,
-	   $Global:Key
+	   $Subreddit,
+	   $Key
 	   )
 
-	   $Global:Subreddit = $TGInput
-	   $Global:Sort = $Global:Key
+	   # $Global:Subreddit = $TGInput
+	   # $Global:Sort = $Global:Key
 	   $Global:EnableMarkdown = $true
-	   Switch($Global:Subreddit)
+	   Switch($Subreddit)
 	   {
-		   none {
-			   Switch($Global:Sort)
+		   '' {
+			   Switch($Key)
 			   {
 				   random {
-					   $Global:rSub = Invoke-RestMethod -Uri 'https://reddit.com/random/.json/'
-					   $Global:Hot = $Global:rSub.data.children.data
+					   $rSub = Invoke-RestMethod -Uri 'https://reddit.com/random/.json/'
+					   $Hot = $rSub.data.children.data
 					   }
 			   }
 		   }
 
-		   `* {
-			   Switch($Global:Sort)
+		   Default {
+			   Switch($Key)
 			   {
 				   random {
-					   $Global:rSub = Invoke-RestMethod -Uri "https://reddit.com/r/$Global:Subreddit/random/.json"
-					   $Global:Hot = $Global:rSub.data.children.data
+					   $rSub = Invoke-RestMethod -Uri "https://reddit.com/r/$Subreddit/random/.json"
+					   $Hot = $rSub.data.children.data
 				   }
 
-				   `* {
-					   $Global:Amount = 5
-					   $Global:rSub = Invoke-RestMetho -Uri "https://reddit.com/r/$Global:Subreddit/.json?sort=top&t=week&limit=$Global:Amount"
-					   $Global:Hot = $Global:rSub.data.$(Get-Random)%$Global:Amount.children.data
+				   Default {
+					   $Amount = 5
+					   $rSub = Invoke-RestMethod -Uri "https://reddit.com/r/$Subreddit/.json?sort=top&t=week&limit=$Amount"
+					   $Hot = $rSub.data.children[$(Get-Random)%$Amount].data
 				   }
 			   }
 		   }
 	   }
-	   $Global:MediaID = ($Global:Hot | Select-String -Pattern "i.redd.it`|imgur`|gfycat" -Raw).url
+	   $Global:MediaID = $Hot.url
 	   if ($Global:MediaID | Select-String -Pattern "gfycat" -Raw)
 	   {
 		   $Global:MediaID = Invoke-RestMethod -Uri $Global:MediaID 	# | SED BLA BLA BLA
 	   }
-	   $Global:Permalink = $Global:Hot.permalink
-	   $Global:Title = $Global:Hot.title 					# | SED BLA BLA BLA
-	   $Global:StickerID = $Global:Hot.stickied
-	   if ($Global:Title)
+	   $Permalink = $Hot.permalink
+	   $Title = $Hot.title 					# | SED BLA BLA BLA
+	   $Global:StickerID = $Hot.stickied
+	   if ($Title)
 	   {
-		   $Global:Caption = "`n $Global:Title `n link: <a href=`"https://reddit.com$Global:Permalink`">$Global:Permalink</a>"
+		   $Global:Caption = "`n $Title `n link: <a href=`"https://reddit.com$Permalink`">$Permalink</a>"
 	   }
 	   if ($Global:MediaID)
 	   {
@@ -485,7 +485,7 @@ function prompt {
    }
 
    function Get-NormalReply {
-	   Switch($Global:FirstNormal)
+	   Switch($Global:FirstNormal.Split(" ")[0])
 	   {
 		   $Global:PF'start' {
 			   $Global:TextID = "`r`nThis is a PowerShell Bot, use /source to download.`r`n"
@@ -503,6 +503,10 @@ function prompt {
 			   $Global:TextID = [string](Get-Content -LiteralPath README.md)
 			   $Global:ReplyID = $Global:MessageID
 			   Deploy-TGMethod send_message | Out-File -path /dev/null
+		   }
+
+		   $Global:PF'reddit' {
+			   Find-Subreddit $Global:FirstNormal.Split(" ")[1] $Global:FirstNormal.Split(" ")[2]
 		   }
 	   }
    }

@@ -30,16 +30,12 @@ function Send-Reply {
 	
 	$Global:UpdateID++
 
-
 	./pwshbot $TGInput.result[0]
 }
 
 while (1)
 {
 	$Global:TGInput = Invoke-RestMethod -Uri "$TelegramAPI/getUpdates?offset=$Global:UpdateID"
-
-
-	Write-Host $Global:UpdateID
 
 	if ($Global:TGInput.result[0].update_id)
 	{
