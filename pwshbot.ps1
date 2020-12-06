@@ -236,7 +236,7 @@ function prompt {
 				   "parse_mode" = "html"
 			   	   "reply_to_message_id" = $Global:ReplyID
 				   "reply_markup" = $Global:MarkupID
-			   	   "text" = $Global:Markdown[0]+$Global:TextID+$Global:Markdown[1]
+			   	   "text" = $Global:Markdown[0]+$Global:TextID.Replace('<','').Replace('>','')+$Global:Markdown[1]
 			   }
 		   }
 
@@ -500,7 +500,7 @@ function prompt {
 		   }
 
 		   $Global:PF'help' {
-			   $Global:TextID = Get-Content -Path README.md
+			   $Global:TextID = Get-Content -LiteralPath README.md
 			   $Global:ReplyID = $Global:MessageID
 			   Deploy-TGMethod send_message | Out-File -path /dev/null
 		   }
