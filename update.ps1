@@ -17,11 +17,32 @@
 
 # Simple and silly script to use bot
 
+$Token = Get-Content -Path token
+$TelegramAPI = "https://api.telegram.org/bot$Token"
+
+function Send-Reply {
+
+
+	if (!$Global:UpdateID)
+	{
+		$Global:UpdateID = $Global:TGInput.result[0].update_id
+	}
+	
+	$Global:UpdateID++
+
+
+	./pwshbot $TGInput.result[0]
+}
+
 while (1)
 {
-	$Token = Get-Content -Path token
-	$TelegramAPI = "https://api.telegram.org/bot$Token"
+	$Global:TGInput = Invoke-RestMethod -Uri "$TelegramAPI/getUpdates?offset=$Global:UpdateID"
 
-	$TGInput = (Invoke-WebRequest -Uri "$TelegramAPI/getUpdates").Content
-	./pwshbot $TGInput
+
+	Write-Host $Global:UpdateID
+
+	if ($Global:TGInput.result[0].update_id)
+	{
+		Send-Reply
+	}
 }
